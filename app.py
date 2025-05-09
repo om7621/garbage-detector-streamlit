@@ -9,7 +9,7 @@ st.title("Garbage Type Detector 🌍♻️")
 model = load_model("model.h5")
 
 # Define class names as per your Teachable Machine output
-class_names = ['Glass', 'Plastic', 'Cardboard', 'Metal', 'Paper', 'Biological', 'Shoes', 'Trash', 'Battery']
+class_names = ['0 trash','1 shoes','2 plastic','3 paper','4 metal','5 glass','6 clothes','7 cardboard','8 biological','9 battery',]
 
 # Function to preprocess image
 def preprocess_image(image):

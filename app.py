@@ -25,7 +25,7 @@ if 'batch' not in st.session_state:
 # Load TFLite model
 @st.cache_resource
 def load_tflite_model():
-    interpreter = tf.lite.Interpreter(model_path="model.tflite")
+    interpreter = tf.lite.Interpreter(model_path="model_unquant.tflite")
     interpreter.allocate_tensors()
     input_details = interpreter.get_input_details()[0]
     output_details = interpreter.get_output_details()[0]

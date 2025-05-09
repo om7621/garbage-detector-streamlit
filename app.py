@@ -11,7 +11,7 @@ st.title("♻️ Garbage Type Detector (Teachable Machine + Webcam)")
 # Load the model
 @st.cache_resource
 def load_teachable_model():
-    return load_model("keras_Model.h5", compile=False)
+    return load_model("keras_model.h5", compile=False)
 
 model = load_teachable_model()
 

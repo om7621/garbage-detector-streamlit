@@ -1,44 +1,43 @@
 import streamlit as st
-import numpy as np
 from PIL import Image, ImageOps
-from keras.models import load_model
+import numpy as np
+import tensorflow as tf
 
-# Disable scientific notation for clarity
-np.set_printoptions(suppress=True)
+st.title("♻️ Garbage Detector (TFLite)")
 
-st.title("♻️ Garbage Type Detector (Teachable Machine + Webcam)")
-
-# Load the model
+# Load TFLite model
 @st.cache_resource
-def load_teachable_model():
-    return load_model("keras_model.h5", compile=False)
+def load_tflite_model():
+    interpreter = tf.lite.Interpreter(model_path="model.tflite")
+    interpreter.allocate_tensors()
+    input_details = interpreter.get_input_details()[0]
+    output_details = interpreter.get_output_details()[0]
+    return interpreter, input_details, output_details
 
-model = load_teachable_model()
+interpreter, input_details, output_details = load_tflite_model()
 
 # Load labels
-class_names = open("labels.txt", "r").readlines()
-class_names = [label.strip().split(" ", 1)[-1] for label in class_names]
+labels = [line.strip().split(" ", 1)[-1] for line in open("labels.txt")]
 
-# Image input from webcam
-img_file_buffer = st.camera_input("Capture a garbage image")
+# Webcam input
+img_data = st.camera_input("Capture an image of waste")
 
-if img_file_buffer is not None:
-    image = Image.open(img_file_buffer).convert("RGB")
+if img_data:
+    image = Image.open(img_data).convert("RGB")
     st.image(image, caption="Captured Image", use_column_width=True)
 
-    # Preprocess the image
+    # Preprocess
     size = (224, 224)
     image = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
-    image_array = np.asarray(image)
-    normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
-    data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
-    data[0] = normalized_image_array
+    arr = (np.asarray(image).astype(np.float32) / 127.5) - 1.0
+    arr = np.expand_dims(arr, axis=0)
 
-    # Prediction
-    prediction = model.predict(data)
-    index = np.argmax(prediction)
-    class_name = class_names[index]
-    confidence_score = prediction[0][index]
+    # Run inference
+    interpreter.set_tensor(input_details["index"], arr)
+    interpreter.invoke()
+    preds = interpreter.get_tensor(output_details["index"])[0]
 
-    # Output
-    st.success(f"### Prediction: {class_name} ({confidence_score * 100:.2f}%)")
+    # Display result
+    idx = int(np.argmax(preds))
+    confidence = preds[idx]
+    st.success(f"**Prediction:** {labels[idx]} ({confidence * 100:.2f}%)")

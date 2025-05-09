@@ -2,31 +2,39 @@ import streamlit as st
 import numpy as np
 from PIL import Image
 from tensorflow.keras.models import load_model
-import cv2
 
-st.title("Garbage Type Detector 🌍♻️")
+# Title
+st.title("♻️ Garbage Type Detector (Webcam-based)")
 
-model = load_model("model.h5")
+# Load labels
+labels = [
+    "trash", "shoes", "plastic", "paper", "metal",
+    "glass", "clothes", "cardboard", "biological", "battery"
+]
 
-# Define class names as per your Teachable Machine output
-class_names = ['0 trash','1 shoes','2 plastic','3 paper','4 metal','5 glass','6 clothes','7 cardboard','8 biological','9 battery',]
+# Load model
+@st.cache_resource
+def load_garbage_model():
+    return load_model("model.h5")
 
-# Function to preprocess image
-def preprocess_image(image):
-    image = image.resize((224, 224))  # change if your model uses a different size
-    img_array = np.array(image) / 255.0
+model = load_garbage_model()
+
+# Image Preprocessing
+def preprocess(image: Image.Image):
+    image = image.resize((224, 224))  # Teachable Machine models use 224x224 by default
+    img_array = np.asarray(image) / 255.0
     return np.expand_dims(img_array, axis=0)
 
 # Webcam input
-img_file_buffer = st.camera_input("Take a picture")
+img_file_buffer = st.camera_input("Capture an image to classify")
 
-if img_file_buffer is not None:
+if img_file_buffer:
     image = Image.open(img_file_buffer)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.image(image, caption="Captured Image", use_column_width=True)
 
-    processed_image = preprocess_image(image)
-    prediction = model.predict(processed_image)
-    class_id = np.argmax(prediction)
-    confidence = np.max(prediction)
+    processed = preprocess(image)
+    prediction = model.predict(processed)[0]
+    predicted_index = np.argmax(prediction)
+    confidence = prediction[predicted_index]
 
-    st.write(f"### Prediction: {class_names[class_id]} ({confidence*100:.2f}%)")
+    st.success(f"### Predicted: **{labels[predicted_index]}** ({confidence * 100:.2f}%)")
